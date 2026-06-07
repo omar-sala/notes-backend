@@ -1,3 +1,4 @@
+const cors = require('cors')
 require('dotenv').config()
 
 const express = require('express')
@@ -12,15 +13,24 @@ const PORT = process.env.PORT || 3000
 
 connectDB()
 
-// Middleware
+// CORS FIRST
+app.use(
+  cors({
+    origin: ['http://localhost:3000', 'http://localhost:3001'],
+    credentials: true,
+  })
+)
+
+// JSON parser
 app.use(express.json())
 
+// Logger
 app.use((req, res, next) => {
   console.log(`[${req.method}] ${req.url}`)
   next()
 })
 
-// Routes (clean structure)
+// Routes
 app.use('/api/users', userRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api/posts', postRoutes)
@@ -30,7 +40,7 @@ app.get('/ping', (req, res) => {
   res.send('PONG')
 })
 
-// Home Route
+// Home
 app.get('/', (req, res) => {
   res.json({
     message: 'API is running',
@@ -38,7 +48,7 @@ app.get('/', (req, res) => {
   })
 })
 
-// Error handling (last middleware)
+// Error handler
 app.use(errorHandler)
 
 // Start server
