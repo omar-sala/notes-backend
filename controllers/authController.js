@@ -4,19 +4,19 @@ const jwt = require('jsonwebtoken')
 
 const register = async (req, res) => {
   try {
-    const { name, password } = req.body
+    const { name, email, password } = req.body
 
-    if (!name || !password) {
+    if (!name || !email || !password) {
       return res.status(400).json({
-        message: 'Name and password are required',
+        message: 'Name, email and password are required',
       })
     }
 
-    const existingUser = await User.findOne({ name })
+    const existingUser = await User.findOne({ email })
 
     if (existingUser) {
       return res.status(400).json({
-        message: 'User already exists',
+        message: 'Email already exists',
       })
     }
 
@@ -24,12 +24,18 @@ const register = async (req, res) => {
 
     const user = await User.create({
       name,
+      email,
       password: hashedPassword,
     })
 
     res.status(201).json({
       message: 'User registered successfully',
-      user,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
     })
   } catch (error) {
     res.status(500).json({
@@ -40,15 +46,15 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
   try {
-    const { name, password } = req.body
+    const { email, password } = req.body
 
-    if (!name || !password) {
+    if (!email || !password) {
       return res.status(400).json({
-        message: 'Name and password are required',
+        message: 'Email and password are required',
       })
     }
 
-    const user = await User.findOne({ name })
+    const user = await User.findOne({ email })
 
     if (!user) {
       return res.status(401).json({
@@ -78,6 +84,12 @@ const login = async (req, res) => {
     res.json({
       message: 'Login successful',
       token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
     })
   } catch (error) {
     res.status(500).json({
