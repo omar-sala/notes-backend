@@ -2,7 +2,23 @@ const User = require('../models/User')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 
-// REGISTER
+/**
+ * 🔐 Generate JWT Token
+ */
+const generateToken = (user) => {
+  return jwt.sign(
+    {
+      userId: user._id,
+      role: user.role,
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
+  )
+}
+
+/**
+ * 🟢 REGISTER
+ */
 const register = async (req, res) => {
   try {
     const { name, email, password } = req.body
@@ -29,8 +45,11 @@ const register = async (req, res) => {
       password: hashedPassword,
     })
 
-    res.status(201).json({
+    const token = generateToken(user)
+
+    return res.status(201).json({
       message: 'User registered successfully',
+      token,
       user: {
         id: user._id,
         name: user.name,
@@ -39,13 +58,15 @@ const register = async (req, res) => {
       },
     })
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       message: error.message,
     })
   }
 }
 
-// LOGIN
+/**
+ * 🔵 LOGIN
+ */
 const login = async (req, res) => {
   try {
     const { email, password } = req.body
@@ -72,16 +93,9 @@ const login = async (req, res) => {
       })
     }
 
-    const token = jwt.sign(
-      {
-        userId: user._id,
-        role: user.role,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    )
+    const token = generateToken(user)
 
-    res.json({
+    return res.json({
       message: 'Login successful',
       token,
       user: {
@@ -92,26 +106,30 @@ const login = async (req, res) => {
       },
     })
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       message: error.message,
     })
   }
 }
 
-// GET ME
+/**
+ * 👤 GET CURRENT USER
+ */
 const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).select('-password')
 
-    res.json(user)
+    return res.json(user)
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       message: error.message,
     })
   }
 }
 
-// GOOGLE LOGIN / REGISTER
+/**
+ * 🔥 GOOGLE AUTH (FIXED VERSION)
+ */
 const googleAuth = async (req, res) => {
   try {
     const { name, email } = req.body
@@ -122,28 +140,18 @@ const googleAuth = async (req, res) => {
       })
     }
 
-    // 1. check user
     let user = await User.findOne({ email })
 
-    // 2. create if not exists
     if (!user) {
       user = await User.create({
-        name,
+        name: name || 'Google User',
         email,
         password: null,
         role: 'user',
       })
     }
 
-    // 3. generate token
-    const token = jwt.sign(
-      {
-        userId: user._id,
-        role: user.role,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    )
+    const token = generateToken(user)
 
     return res.json({
       message: 'Google auth successful',
@@ -162,7 +170,6 @@ const googleAuth = async (req, res) => {
   }
 }
 
-// EXPORTS
 module.exports = {
   register,
   login,
