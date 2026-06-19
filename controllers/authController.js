@@ -1,6 +1,7 @@
 const User = require('../models/User')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
+const admin = require('../config/firebase')
 
 /**
  * 🔐 Generate JWT Token
@@ -128,15 +129,26 @@ const getMe = async (req, res) => {
 }
 
 /**
- * 🔥 GOOGLE AUTH (FIXED VERSION)
+ *  GOOGLE AUTH (FIXED VERSION)
  */
 const googleAuth = async (req, res) => {
   try {
-    const { name, email } = req.body
+    const { idToken } = req.body
 
+    if (!idToken) {
+      return res.status(400).json({
+        message: 'No Google token provided',
+      })
+    }
+
+    const decoded = await admin.auth().verifyIdToken(idToken)
+
+    const { email, name, uid } = decoded
+
+    // 🔥 CHECK مهم جداً (اللي انت طلبته)
     if (!email) {
       return res.status(400).json({
-        message: 'Email is required',
+        message: 'Google account has no email',
       })
     }
 
@@ -147,14 +159,20 @@ const googleAuth = async (req, res) => {
         name: name || 'Google User',
         email,
         password: null,
-        role: 'user',
+        googleId: uid, // لو ضفته في User model
       })
     }
 
-    const token = generateToken(user)
+    const token = jwt.sign(
+      {
+        userId: user._id,
+        role: user.role,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    )
 
     return res.json({
-      message: 'Google auth successful',
       token,
       user: {
         id: user._id,
@@ -164,8 +182,8 @@ const googleAuth = async (req, res) => {
       },
     })
   } catch (error) {
-    return res.status(500).json({
-      message: error.message,
+    return res.status(401).json({
+      message: 'Invalid Google token',
     })
   }
 }
