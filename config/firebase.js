@@ -1,10 +1,10 @@
 const admin = require('firebase-admin')
 const { initializeApp, getApps } = require('firebase-admin/app')
+const { cert } = require('firebase-admin/app') // استدعاء الـ cert بشكل منفصل وصحيح
 
 let serviceAccount
 
 try {
-  // التأكد من قراءة المتغير وفك التشفير بأمان من بيئة Railway
   if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
     throw new Error(
       'FIREBASE_SERVICE_ACCOUNT variable is missing in environment settings.'
@@ -19,13 +19,13 @@ try {
     '❌ Firebase initialization error (Secret Parsing):',
     error.message
   )
-  process.exit(1) // إيقاف التشغيل لمنع الـ Crash العشوائي ووصف المشكلة بوضوح
+  process.exit(1)
 }
 
-// الحل الجذري للمشكلة: استخدام getApps() بدلاً من admin.apps
+// التعديل السحري هنا: استخدام الـ cert المستورد مباشرة بدلاً من admin.credential.cert
 if (getApps().length === 0) {
   initializeApp({
-    credential: admin.credential.cert(serviceAccount),
+    credential: cert(serviceAccount),
   })
   console.log('🚀 Firebase Admin initialized successfully for Google Auth!')
 }
