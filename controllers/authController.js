@@ -133,22 +133,11 @@ const getMe = async (req, res) => {
  */
 const googleAuth = async (req, res) => {
   try {
-    const { idToken } = req.body
+    const { name, email } = req.body
 
-    if (!idToken) {
-      return res.status(400).json({
-        message: 'No Google token provided',
-      })
-    }
-
-    const decoded = await admin.auth().verifyIdToken(idToken)
-
-    const { email, name, uid } = decoded
-
-    // 🔥 CHECK مهم جداً (اللي انت طلبته)
     if (!email) {
       return res.status(400).json({
-        message: 'Google account has no email',
+        message: 'Email is required',
       })
     }
 
@@ -159,7 +148,6 @@ const googleAuth = async (req, res) => {
         name: name || 'Google User',
         email,
         password: null,
-        googleId: uid, // لو ضفته في User model
       })
     }
 
@@ -182,8 +170,8 @@ const googleAuth = async (req, res) => {
       },
     })
   } catch (error) {
-    return res.status(401).json({
-      message: 'Invalid Google token',
+    return res.status(500).json({
+      message: error.message,
     })
   }
 }
