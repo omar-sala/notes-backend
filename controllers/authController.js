@@ -139,15 +139,9 @@ const googleAuth = async (req, res) => {
       return res.status(400).json({ message: 'idToken is required' })
     }
 
-    // تحقق من التوكن عن طريق Firebase Admin
     const decodedToken = await admin.auth().verifyIdToken(idToken)
     const { name, email } = decodedToken
 
-    if (!email) {
-      return res.status(400).json({ message: 'Email not found in token' })
-    }
-
-    // لو الإيميل مش موجود، اعمله أوتوماتيك (register + login في خطوة واحدة)
     let user = await User.findOne({ email })
 
     if (!user) {
