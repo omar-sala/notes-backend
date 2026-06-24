@@ -133,14 +133,21 @@ const getMe = async (req, res) => {
  */
 const googleAuth = async (req, res) => {
   try {
-    const { name, email } = req.body
+    const { idToken } = req.body
 
-    if (!email) {
-      return res.status(400).json({
-        message: 'Email is required',
-      })
+    if (!idToken) {
+      return res.status(400).json({ message: 'idToken is required' })
     }
 
+    // تحقق من التوكن عن طريق Firebase Admin
+    const decodedToken = await admin.auth().verifyIdToken(idToken)
+    const { name, email } = decodedToken
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email not found in token' })
+    }
+
+    // لو الإيميل مش موجود، اعمله أوتوماتيك (register + login في خطوة واحدة)
     let user = await User.findOne({ email })
 
     if (!user) {
@@ -151,14 +158,7 @@ const googleAuth = async (req, res) => {
       })
     }
 
-    const token = jwt.sign(
-      {
-        userId: user._id,
-        role: user.role,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    )
+    const token = generateToken(user)
 
     return res.json({
       token,
@@ -170,9 +170,7 @@ const googleAuth = async (req, res) => {
       },
     })
   } catch (error) {
-    return res.status(500).json({
-      message: error.message,
-    })
+    return res.status(500).json({ message: error.message })
   }
 }
 
