@@ -16,8 +16,8 @@ try {
 }
 
 if (getApps().length === 0) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
+  initializeApp({
+    credential: cert(serviceAccount),
   })
   console.log('🚀 Firebase Admin initialized successfully!')
 }
